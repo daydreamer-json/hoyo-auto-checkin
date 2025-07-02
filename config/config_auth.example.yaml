@@ -1,0 +1,17 @@
+discordWebhookList:
+  - https://discord.com/api/webhooks/looooooonglonglongtoken
+userList:
+  - displayUserName: Friendly User Name
+    userName: sample@example.com
+    loginType: mail # username or mail
+    hoyolabUid: 123456789
+    discordUid: '123456789123456789' # must be string
+    hoyolabCookieVersion: 1 # 1 or 2
+    hoyolabCookie:
+      ltoken: ltokenCookie
+    hoyolabLang: ja-jp
+    enableService:
+      hk4e: true # Genshin Impact
+      hkrpg: true # Honkai: Star Rail
+      bh3: true # Honkai Impact 3rd
+      nap: true # Zenless Zone Zero

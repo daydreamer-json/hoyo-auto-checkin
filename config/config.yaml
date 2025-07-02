@@ -1,0 +1,35 @@
+network:
+  signApi:
+    hk4e:
+      url: sg-hk4e-api.hoyolab.com/event/sol/sign
+      qs:
+        act_id: e202102251931481
+    hkrpg:
+      url: sg-public-api.hoyolab.com/event/luna/os/sign
+      qs:
+        act_id: e202303301540311
+    bh3:
+      url: sg-public-api.hoyolab.com/event/mani/sign
+      qs:
+        act_id: e202110291205111
+    nap:
+      url: sg-public-api.hoyolab.com/event/luna/zzz/os/sign
+      qs:
+        act_id: e202406031448091
+  userAgent:
+    chromeWindows: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+      (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36
+    curl: curl/8.4.0
+    curlUnity: UnityPlayer/2022.3.21f1 (UnityWebRequest/1.0, libcurl/8.5.0-DEV)
+    ios: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15
+      (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
+  timeout: 20000
+  retryCount: 5
+threadCount:
+  network: 8
+cli:
+  autoExit: false
+logger:
+  logLevel: 0
+  useCustomLayout: true
+  customLayoutPattern: "%[%d{hh:mm:ss.SSS} %-5.0p >%] %m"

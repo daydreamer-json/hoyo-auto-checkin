@@ -1,4 +1,4 @@
-config/config_auth.*
+config/config_auth.yaml
 
 # dependencies (bun install)
 node_modules
@@ -9,7 +9,7 @@ build
 # output
 out
 output
-config
+#config
 dist
 *.tgz
 
