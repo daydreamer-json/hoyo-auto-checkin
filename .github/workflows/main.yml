@@ -1,7 +1,7 @@
 name: Auto claim workflow
 on:
   schedule:
-    - cron: '1 16 * * *'
+    - cron: '0 16 * * *'
   workflow_dispatch:
 jobs:
   run:
