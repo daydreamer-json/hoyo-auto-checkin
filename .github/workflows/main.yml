@@ -1,0 +1,20 @@
+name: Auto claim workflow
+on:
+  schedule:
+    - cron: '1 16 * * *'
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+    - name: Create auth config from GitHub Secrets
+      run: echo '${{ secrets.CONFIG_AUTH_YAML }}' > config/config_auth.yaml
+      shell: bash
+    - name: Install dependencies
+      run: bun install
+    - name: Run auto claim
+      run: bun start
