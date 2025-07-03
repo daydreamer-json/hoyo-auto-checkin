@@ -24,4 +24,4 @@ jobs:
       with:
         max_attempts: 5
         timeout_minutes: 10
-        commands: bun start
+        command: bun start
