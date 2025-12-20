@@ -1,12 +1,12 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import argvUtils from './utils/argv';
-import * as TypesLogLevels from './types/LogLevels';
-import logger from './utils/logger';
-import appConfig from './utils/config';
-import configEmbed from './utils/configEmbed';
-import exitUtils from './utils/exit';
-import cmds from './cmds';
+import cmds from './cmds.js';
+import * as TypesLogLevels from './types/LogLevels.js';
+import argvUtils from './utils/argv.js';
+import appConfig from './utils/config.js';
+import configEmbed from './utils/configEmbed.js';
+import exitUtils from './utils/exit.js';
+import logger from './utils/logger.js';
 
 if (configEmbed.VERSION_NUMBER === null) throw new Error('Embed VERSION_NUMBER is null');
 
@@ -38,7 +38,15 @@ async function parseCommand() {
           //   },
         });
       },
-      wrapHandler(cmds.test),
+      wrapHandler(cmds.claim),
+    )
+    .command(
+      ['redeem'],
+      'Start auto redeem',
+      (yargs) => {
+        yargs.options({});
+      },
+      wrapHandler(cmds.redeem),
     )
     .options({
       'log-level': {
@@ -56,11 +64,11 @@ async function parseCommand() {
     })
     .middleware(async (argv) => {
       argvUtils.setArgv(argv);
-      logger.level = argvUtils.getArgv().logLevel;
-      logger.trace('Process started');
+      logger.level = argvUtils.getArgv()['logLevel'];
+      logger.trace('Process started: ' + `${configEmbed.APPLICATION_NAME} v${configEmbed.VERSION_NUMBER}`);
     })
     .scriptName(configEmbed.APPLICATION_NAME)
-    .version(configEmbed.VERSION_NUMBER!)
+    .version(String(configEmbed.VERSION_NUMBER))
     .usage('$0 <command> [argument] [option]')
     .help()
     .alias('help', 'h')

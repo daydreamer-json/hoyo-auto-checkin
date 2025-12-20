@@ -1,7 +1,7 @@
-import bun from 'bun';
+import deepmerge from 'deepmerge';
 import YAML from 'yaml';
-import * as TypesLogLevels from '../types/LogLevels';
-import * as TypesGameEntry from '../types/GameEntry';
+import * as TypesGameEntry from '../types/GameEntry.js';
+import * as TypesLogLevels from '../types/LogLevels.js';
 
 type Freeze<T> = Readonly<{
   [P in keyof T]: T[P] extends object ? Freeze<T[P]> : T[P];
@@ -14,11 +14,16 @@ type ConfigType = AllRequired<
   Freeze<{
     network: {
       signApi: Record<TypesGameEntry.GameEntry, { url: string; qs: { act_id: string } }>;
+      redeemApi: Record<TypesGameEntry.RedeemGameEntry, { url: string; qs: { game_biz: string } }>;
+      redeemSearchApi: Record<TypesGameEntry.RedeemGameEntry, { url: string; qs: { game_id: number } }>;
+      accountApi: {
+        getServer: { url: string };
+        getGameData: { url: string };
+      };
       userAgent: {
         // UA to hide the fact that the access is from this tool
         chromeWindows: string;
         curl: string;
-        curlUnity: string;
         ios: string;
       };
       timeout: number; // Network timeout
@@ -48,11 +53,28 @@ const initialConfig: ConfigType = {
       bh3: { url: 'sg-public-api.hoyolab.com/event/mani/sign', qs: { act_id: 'e202110291205111' } },
       nap: { url: 'sg-public-api.hoyolab.com/event/luna/zzz/os/sign', qs: { act_id: 'e202406031448091' } },
     },
+    redeemApi: {
+      hk4e: {
+        url: 'public-operation-hk4e.hoyolab.com/common/apicdkey/api/webExchangeCdkeyHyl',
+        qs: { game_biz: 'hk4e_global' },
+      },
+      nap: {
+        url: 'public-operation-nap.hoyolab.com/common/apicdkey/api/webExchangeCdkeyHyl',
+        qs: { game_biz: 'nap_global' },
+      },
+    },
+    redeemSearchApi: {
+      hk4e: { url: 'bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material', qs: { game_id: 2 } },
+      nap: { url: 'bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material', qs: { game_id: 8 } },
+    },
+    accountApi: {
+      getServer: { url: 'api-account-os.hoyolab.com/binding/api/getAllRegions' },
+      getGameData: { url: 'api-account-os.hoyolab.com/binding/api/getUserGameRolesByLtoken' },
+    },
     userAgent: {
       chromeWindows:
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
       curl: 'curl/8.4.0',
-      curlUnity: 'UnityPlayer/2022.3.21f1 (UnityWebRequest/1.0, libcurl/8.5.0-DEV)',
       ios: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
     },
     timeout: 20000,
@@ -69,10 +91,19 @@ const initialConfig: ConfigType = {
 
 const filePath = 'config/config.yaml';
 
-if ((await bun.file(filePath).exists()) === false) {
-  await bun.write(filePath, YAML.stringify(initialConfig, null, 2));
+if ((await Bun.file(filePath).exists()) === false) {
+  await Bun.write(filePath, YAML.stringify(initialConfig));
 }
 
-const config: ConfigType = YAML.parse(await bun.file(filePath).text());
+const config: ConfigType = await (async () => {
+  const rawFileData: ConfigType = YAML.parse(await Bun.file(filePath).text()) as ConfigType;
+  const mergedConfig = deepmerge(initialConfig, rawFileData, {
+    arrayMerge: (_destinationArray, sourceArray) => sourceArray,
+  });
+  if (JSON.stringify(rawFileData) !== JSON.stringify(mergedConfig)) {
+    await Bun.write(filePath, YAML.stringify(mergedConfig));
+  }
+  return mergedConfig;
+})();
 
 export default config;

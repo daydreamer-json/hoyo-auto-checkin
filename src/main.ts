@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 
-// import clear from 'clear';
-// clear();
 import childProcess from 'node:child_process';
 import util from 'node:util';
-import parseCommand from './cmd';
-import exitUtils from './utils/exit';
+import parseCommand from './cmd.js';
+import exitUtils from './utils/exit.js';
+
 const execPromise = util.promisify(childProcess.exec);
 
 async function main(): Promise<void> {
   try {
-    process.platform === 'win32' ? await execPromise('chcp 65001') : null;
+    process.platform === 'win32' ? await execPromise('chcp 65001') : undefined;
     await parseCommand();
   } catch (error) {
     console.log(error);

@@ -1,6 +1,6 @@
-import signUtils from '../utils/sign';
-import webhookUtils from '../utils/webhook';
-import logger from '../utils/logger';
+import logger from '../utils/logger.js';
+import signUtils from '../utils/sign.js';
+import webhookUtils from '../utils/webhook.js';
 
 async function mainCmdHandler() {
   const timer: Record<'start' | 'end', number> = {

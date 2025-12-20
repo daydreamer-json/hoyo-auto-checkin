@@ -1,13 +1,16 @@
 import ky from 'ky';
 import { DateTime } from 'luxon';
-import configAuth from './configAuth';
-import logger from './logger';
-import signUtils, { type SignRspObjType } from './sign';
+import * as TypesGameEntry from '../types/GameEntry.js';
+import configAuth from './configAuth.js';
+import logger from './logger.js';
+import mathUtils from './math.js';
+import redeemUtils from './redeem.js';
+import { type SignRspObjType } from './sign.js';
 
 async function sendDiscordWebhook(context: Record<string, any>) {
   logger.info('Sending Discord webhook ...');
   for (const webhookUrl of configAuth.discordWebhookList) {
-    const rsp = await ky.post(webhookUrl, {
+    await ky.post(webhookUrl, {
       json: { embeds: [context] },
     });
   }
@@ -67,7 +70,7 @@ function bulidWebhookContext(
               (() => {
                 if (userRsp.isChecked) return 'Already claimed';
                 if (userRsp.isOK) return 'OK';
-                return userRsp.json.message.replaceAll('\n', ' ');
+                return userRsp.json['message'].replaceAll('\n', ' ');
               })(),
           )
           .join('\n') +
@@ -82,7 +85,79 @@ function bulidWebhookContext(
   };
 }
 
+function buildWebhookContextRedeemer(
+  redeemRetArr: {
+    hoyolabUid: number;
+    game: TypesGameEntry.RedeemGameEntry;
+    game_biz: string;
+    account: {
+      region: string;
+      game_uid: string;
+      nickname: string;
+      level: number;
+    };
+    code: string;
+    result: Awaited<ReturnType<typeof redeemUtils.doRedeemCode>>;
+  }[],
+) {
+  return {
+    author: {
+      name: 'HoYoLAB Auto Redemption',
+    },
+    title: 'Redemption Result',
+    // description: `Processed in: **${Math.ceil(timer.end - timer.start)} ms**`,
+    description: (() => {
+      const okCodes = [...new Set(redeemRetArr.filter((e) => ['ok'].includes(e.result.resultType)).map((e) => e.code))];
+      const expiredCodes = [
+        ...new Set(redeemRetArr.filter((e) => ['expired'].includes(e.result.resultType)).map((e) => e.code)),
+      ];
+      return `Found **${okCodes.length}** valid codes\nFound **${expiredCodes.length}** expired codes`;
+    })(),
+    fields: (() => {
+      const outArr: { name: string; value: string; inline: boolean }[] = [];
+      configAuth.userList.forEach((authUserEntry) => {
+        let isValueExist: boolean = false;
+        const valueTmp = (() => {
+          const outValueTextArr: string[] = [];
+          const outValueTextSubArr: [string, string, string][] = [];
+          const filteredRetArr = redeemRetArr.filter(
+            (e) => e.hoyolabUid === authUserEntry.hoyolabUid && e.result.resultType === 'ok',
+          );
+          for (const gameName of [...new Set(filteredRetArr.map((e) => e.game))]) {
+            for (const regionName of [
+              ...new Set(filteredRetArr.filter((e) => e.game === gameName).map((e) => e.account.region)),
+            ]) {
+              const subFilteredRetArr = filteredRetArr.filter(
+                (e) => e.game === gameName && e.account.region === regionName,
+              );
+              const okCodes = [...new Set(subFilteredRetArr.map((e) => e.code))];
+              if (okCodes.length === 0) continue;
+              outValueTextSubArr.push([`${gameName}, `, `${regionName}: `, `${okCodes.length} codes`]);
+              isValueExist = true;
+            }
+          }
+          outValueTextArr.push(
+            ...outValueTextSubArr.map((e) =>
+              [
+                e[0].padEnd(mathUtils.arrayMax(outValueTextSubArr.map((f) => f[0].length))),
+                e[1].padEnd(mathUtils.arrayMax(outValueTextSubArr.map((f) => f[1].length))),
+                e[2].padEnd(mathUtils.arrayMax(outValueTextSubArr.map((f) => f[2].length))),
+              ].join(''),
+            ),
+          );
+          return ['```', ...outValueTextArr, '```'].join('\n');
+        })();
+        if (isValueExist) outArr.push({ name: authUserEntry.displayUserName, value: valueTmp, inline: false });
+      });
+      return outArr;
+    })(),
+    color: 0xa0a0a0,
+    timestamp: DateTime.now().toISO(),
+  };
+}
+
 export default {
   bulidWebhookContext,
   sendDiscordWebhook,
+  buildWebhookContextRedeemer,
 };

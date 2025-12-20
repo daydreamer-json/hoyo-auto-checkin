@@ -1,11 +1,7 @@
-// import downloadMissingAssets from './cmds/downloadMissingAssets';
-// import dumpMasterDb from './cmds/dumpMasterDb';
-// import extractAssetBundles from './cmds/extractAssetBundles';
-// import extractCri from './cmds/extractCri';
-// import generateLiveAudio from './cmds/generateLiveAudio';
-// import openHandbook from './cmds/openHandbook';
-import test from './cmds/test';
+import claim from './cmds/claim.js';
+import redeem from './cmds/redeem.js';
 
 export default {
-  test,
+  claim,
+  redeem,
 };

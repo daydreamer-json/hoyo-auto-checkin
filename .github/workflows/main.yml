@@ -8,20 +8,26 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Setup Bun
-      uses: oven-sh/setup-bun@v2
-    - name: Create auth config from GitHub Secrets
-      run: |
-        mkdir -p config
-        echo '${{ secrets.CONFIG_AUTH_YAML }}' > config/config_auth.yaml
-      shell: bash
-    - name: Install dependencies
-      run: bun install
-    - name: Run auto claim
-      uses: nick-fields/retry@v3
-      with:
-        max_attempts: 5
-        timeout_minutes: 10
-        command: bun start
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Create auth config from GitHub Secrets
+        run: |
+          mkdir -p config
+          echo '${{ secrets.CONFIG_AUTH_YAML }}' > config/config_auth.yaml
+        shell: bash
+      - name: Install dependencies
+        run: bun install
+      - name: Run auto claim
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          timeout_minutes: 10
+          command: bun run src/main.ts claim
+      - name: Run auto redemption
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 5
+          timeout_minutes: 10
+          command: bun run src/main.ts redeem

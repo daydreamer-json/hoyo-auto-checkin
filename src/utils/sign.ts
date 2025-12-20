@@ -1,8 +1,8 @@
 import ky from 'ky';
-import appConfig from './config';
-import configAuth from './configAuth';
-import logger from './logger';
-import * as TypesGameEntry from '../types/GameEntry';
+import * as TypesGameEntry from '../types/GameEntry.js';
+import appConfig from './config.js';
+import configAuth from './configAuth.js';
+import logger from './logger.js';
 
 type SignRspObjType = {
   gameEntry: TypesGameEntry.GameEntry;
@@ -52,25 +52,25 @@ async function signSingleUser(userObject: (typeof configAuth.userList)[number]):
       }).json();
       const retObj: SignRspObjType = (() => {
         const checkedRegex = /(済|もう受領したよ)/;
-        let isCaptchaProtected: boolean = apiRsp.data?.gt_result?.is_risk ?? false;
+        let isCaptchaProtected: boolean = apiRsp['data']?.gt_result?.is_risk ?? false;
         let errorLevel: number = 0;
         if (isCaptchaProtected === true) {
           errorLevel = 2;
-        } else if (apiRsp.message != 'OK') {
+        } else if (apiRsp['message'] != 'OK') {
           errorLevel = 1;
         }
-        if (userObject.hoyolabLang === 'ja-jp' && checkedRegex.test(apiRsp.message as string)) {
+        if (userObject.hoyolabLang === 'ja-jp' && checkedRegex.test(apiRsp['message'] as string)) {
           errorLevel = 0;
         }
         return {
           gameEntry,
           isOK:
-            apiRsp.message === 'OK' ||
-            (userObject.hoyolabLang === 'ja-jp' && checkedRegex.test(apiRsp.message as string)),
-          isChecked: userObject.hoyolabLang === 'ja-jp' && checkedRegex.test(apiRsp.message as string),
+            apiRsp['message'] === 'OK' ||
+            (userObject.hoyolabLang === 'ja-jp' && checkedRegex.test(apiRsp['message'] as string)),
+          isChecked: userObject.hoyolabLang === 'ja-jp' && checkedRegex.test(apiRsp['message'] as string),
           isUnknown:
-            (userObject.hoyolabLang === 'ja-jp' && checkedRegex.test(apiRsp.message as string)) === false &&
-            apiRsp.message != 'OK',
+            (userObject.hoyolabLang === 'ja-jp' && checkedRegex.test(apiRsp['message'] as string)) === false &&
+            apiRsp['message'] != 'OK',
           isCaptchaProtected,
           errorLevel,
           json: apiRsp,

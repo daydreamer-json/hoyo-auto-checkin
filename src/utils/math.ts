@@ -35,24 +35,56 @@ export default {
     };
   },
 
-  formatFileSize(bytes: number, decimals: number = 2) {
-    if (bytes === 0) return '0 byte';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-  },
-
-  formatFileSizeFixedUnit(
+  formatFileSize(
     bytes: number,
-    unit: 'bytes' | 'KiB' | 'MiB' | 'GiB' | 'TiB' | 'PiB' | 'EiB' | 'ZiB' | 'YiB' = 'MiB',
-    decimals: number = 2,
+    options: {
+      decimals: number;
+      decimalPadding: boolean;
+      useBinaryUnit: boolean;
+      useBitUnit: boolean;
+      unitVisible: boolean;
+      unit: 'B' | 'K' | 'M' | 'G' | 'T' | 'P' | 'E' | 'Z' | 'Y' | null;
+    },
   ) {
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-    const i = sizes.indexOf(unit);
-    return (bytes / Math.pow(k, i)).toFixed(dm) + ' ' + sizes[i];
+    const k = options.useBinaryUnit ? 1024 : 1000;
+    const dm = options.decimals < 0 ? 0 : options.decimals;
+
+    const baseUnits = ['B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'];
+    const binaryUnitSuffix = options.useBitUnit ? 'ib' : 'iB';
+    const siUnitSuffix = options.useBitUnit ? 'b' : 'B';
+
+    const getUnitString = (i: number) => {
+      if (i === 0) return options.useBitUnit ? 'b' : 'B';
+      return baseUnits[i] + (options.useBinaryUnit ? binaryUnitSuffix : siUnitSuffix);
+    };
+
+    let value = bytes < 0 ? 0 : Math.floor(bytes);
+    if (options.useBitUnit) {
+      value *= 8;
+    }
+
+    let i: number;
+    if (options.unit !== null) {
+      i = baseUnits.indexOf(options.unit);
+      if (i === -1) throw new Error(`Invalid unit: ${options.unit}`);
+    } else {
+      if (value === 0) {
+        i = 0;
+      } else {
+        i = Math.floor(Math.log(value) / Math.log(k));
+        i = Math.max(0, Math.min(baseUnits.length - 1, i)); // clamp
+      }
+    }
+
+    const resultValue = value / Math.pow(k, i);
+
+    let formattedValue: string;
+    if (options.decimalPadding) {
+      formattedValue = resultValue.toFixed(dm);
+    } else {
+      formattedValue = resultValue.toFixed(dm).replace(/\.?0+$/, '');
+    }
+
+    return formattedValue + (options.unitVisible ? ' ' + getUnitString(i) : '');
   },
 };
