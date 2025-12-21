@@ -85,7 +85,7 @@ const initialConfig: ConfigType = {
     timeout: 20000,
     retryCount: 5,
   },
-  threadCount: { network: 8 },
+  threadCount: { network: 16 },
   cli: { autoExit: false },
   logger: {
     logLevel: 0,

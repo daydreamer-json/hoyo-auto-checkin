@@ -56,7 +56,7 @@ network:
   timeout: 20000
   retryCount: 5
 threadCount:
-  network: 8
+  network: 16
 cli:
   autoExit: false
 logger:
