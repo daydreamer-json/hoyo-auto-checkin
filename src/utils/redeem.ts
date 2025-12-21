@@ -171,7 +171,7 @@ async function getAvailableCodesHk4e() {
   })();
   return [...new Set([...official, ...community, ...fandom, ...gamewith])]
     .toSorted()
-    .filter((e) => !appConfig.redemption.knownExpiredCodes.includes(e));
+    .filter((e) => preCheckIsCodeNotExpired(e));
 }
 
 async function getAvailableCodesNap() {
@@ -245,7 +245,14 @@ async function getAvailableCodesNap() {
     ]),
   ]
     .toSorted()
-    .filter((e) => !appConfig.redemption.knownExpiredCodes.includes(e));
+    .filter((e) => preCheckIsCodeNotExpired(e));
+}
+
+function preCheckIsCodeNotExpired(code: string) {
+  for (const knownCodeEntry of appConfig.redemption.knownExpiredCodes) {
+    if (code.includes(knownCodeEntry)) return false;
+  }
+  return true;
 }
 
 async function getAllGameServers() {

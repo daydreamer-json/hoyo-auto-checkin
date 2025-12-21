@@ -1,5 +1,6 @@
 import PQueue from 'p-queue';
 import * as TypesGameEntry from '../types/GameEntry.js';
+import appConfig from '../utils/config.js';
 import configAuth from '../utils/configAuth.js';
 import logger from '../utils/logger.js';
 import redeemUtils from '../utils/redeem.js';
@@ -18,7 +19,7 @@ async function mainCmdHandler() {
       hoyolabUid: number;
       data: Awaited<ReturnType<typeof redeemUtils.getAllGameAccounts>>;
     }[] = [];
-    const queue = new PQueue({ concurrency: 8 });
+    const queue = new PQueue({ concurrency: appConfig.threadCount.network });
     for (const authUserEntry of configAuth.userList) {
       queue.add(async () => {
         const gameDataRsp = await redeemUtils.getAllGameAccounts(
@@ -52,7 +53,7 @@ async function mainCmdHandler() {
   }[] = [];
   await (async () => {
     logger.info('Attempting automatic redemption ...');
-    const queue = new PQueue({ concurrency: 8 });
+    const queue = new PQueue({ concurrency: appConfig.threadCount.network });
     for (const authUserEntry of configAuth.userList) {
       const gameDataRsp = gameDataRspArray
         .find((e) => e.hoyolabUid === authUserEntry.hoyolabUid)!
@@ -63,6 +64,17 @@ async function mainCmdHandler() {
           queue.add(async () => {
             const redeemCodeArray = detectedRedeemCodes[gameName];
             for (const [codeEntryIndex, codeEntry] of Object.entries(redeemCodeArray)) {
+              if (
+                configAuth.knownUsedCodes.find(
+                  (e) =>
+                    e.hoyolabUid === authUserEntry.hoyolabUid &&
+                    e.game === gameDataRspEntry.game &&
+                    e.region === gameAccEntry.region &&
+                    e.code === codeEntry,
+                )
+              ) {
+                continue;
+              }
               const result = await redeemUtils.doRedeemCode(
                 gameDataRspEntry.game as TypesGameEntry.RedeemGameEntry,
                 gameAccEntry.region,
