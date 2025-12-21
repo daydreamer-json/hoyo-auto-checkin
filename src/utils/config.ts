@@ -16,10 +16,8 @@ type ConfigType = AllRequired<
       signApi: Record<TypesGameEntry.GameEntry, { url: string; qs: { act_id: string } }>;
       redeemApi: Record<TypesGameEntry.RedeemGameEntry, { url: string; qs: { game_biz: string } }>;
       redeemSearchApi: Record<TypesGameEntry.RedeemGameEntry, { url: string; qs: { game_id: number } }>;
-      accountApi: {
-        getServer: { url: string };
-        getGameData: { url: string };
-      };
+      accountApi: { getServer: { url: string }; getGameData: { url: string } };
+      hoyolabCommunityApi: { searchPost: { url: string }; getPostFull: { url: string } };
       userAgent: {
         // UA to hide the fact that the access is from this tool
         chromeWindows: string;
@@ -41,6 +39,9 @@ type ConfigType = AllRequired<
       logLevel: TypesLogLevels.LogLevelNumber;
       useCustomLayout: boolean;
       customLayoutPattern: string;
+    };
+    redemption: {
+      knownExpiredCodes: string[];
     };
   }>
 >;
@@ -71,6 +72,10 @@ const initialConfig: ConfigType = {
       getServer: { url: 'api-account-os.hoyolab.com/binding/api/getAllRegions' },
       getGameData: { url: 'api-account-os.hoyolab.com/binding/api/getUserGameRolesByLtoken' },
     },
+    hoyolabCommunityApi: {
+      searchPost: { url: 'bbs-api-os.hoyolab.com/community/search/wapi/search/post' },
+      getPostFull: { url: 'bbs-api-os.hoyolab.com/community/post/wapi/getPostFull' },
+    },
     userAgent: {
       chromeWindows:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
@@ -86,6 +91,9 @@ const initialConfig: ConfigType = {
     logLevel: 0,
     useCustomLayout: true,
     customLayoutPattern: '%[%d{hh:mm:ss.SSS} %-5.0p >%] %m',
+  },
+  redemption: {
+    knownExpiredCodes: [],
   },
 };
 

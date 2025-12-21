@@ -41,6 +41,11 @@ network:
       url: api-account-os.hoyolab.com/binding/api/getAllRegions
     getGameData:
       url: api-account-os.hoyolab.com/binding/api/getUserGameRolesByLtoken
+  hoyolabCommunityApi:
+    searchPost:
+      url: bbs-api-os.hoyolab.com/community/search/wapi/search/post
+    getPostFull:
+      url: bbs-api-os.hoyolab.com/community/post/wapi/getPostFull
   userAgent:
     chromeWindows: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
       (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36
@@ -58,3 +63,50 @@ logger:
   logLevel: 0
   useCustomLayout: true
   customLayoutPattern: "%[%d{hh:mm:ss.SSS} %-5.0p >%] %m"
+redemption:
+  knownExpiredCodes:
+    - 1203Kuunrukous
+    - 3SXYPDLD3FYV
+    - 4BWU6FCNYUSH
+    - 8QD412QXCEU1
+    - ABZVGEWK3O
+    - AOZJ2TD5FZPV
+    - CAQIJXA04I
+    - CLD6ZWU35GTH
+    - DIALYN1125
+    - Dragon1203Durin
+    - EKLP57EFE4G4
+    - EPIC2025
+    - EZIZA5FG5318
+    - FIGHTLIKESKIRK57
+    - GENSHIN5THSPRADIO
+    - GenshinHigh5Fight
+    - GIFTFROMSKIRK57
+    - GOGOCraftspeople
+    - GS58YTPGFY
+    - GS58YTRFXF
+    - GS60YTM4NW
+    - GS61RD26W966
+    - GS61YTEFW9V6
+    - GS62YT82QLCE
+    - GWLN97614C8L
+    - HiFiveTraveler
+    - ITSTARTSIN60NODKRAI
+    - LaumaNodKraiFlins
+    - LUCIA1015
+    - LunaI0910
+    - MBEYNDLU3WGZ
+    - NODKRAIGAMESCOM
+    - NODKRAISP0909
+    - NSXD6FDNHCS5
+    - NTIF4NP4DO89
+    - R4SCAU7CR1G9
+    - SAWFSXA7NCSM
+    - SWIP9F497X18
+    - TOUGA75TO1I3
+    - Vamosacorrer25
+    - VSWSRL22S4PD
+    - WUSX568M938E
+    - WUSXC75YBT8W
+    - XTFPHSEJCFYM
+    - ZZZMADAMISU

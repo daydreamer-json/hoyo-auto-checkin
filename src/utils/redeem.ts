@@ -1,5 +1,6 @@
 import { JSDOM } from 'jsdom';
 import ky from 'ky';
+import PQueue from 'p-queue';
 import * as TypesGameEntry from '../types/GameEntry.js';
 import appConfig from './config.js';
 import logger from './logger.js';
@@ -28,9 +29,97 @@ async function getAvailableCodesOfficial(game: TypesGameEntry.RedeemGameEntry): 
   ] as string[];
 }
 
+async function getAvailableCodesCommunity(game: TypesGameEntry.RedeemGameEntry): Promise<string[]> {
+  logger.debug('Searching codes from HoYoLAB community ...');
+  const apiSearchRsp: any = await ky
+    .get('https://' + appConfig.network.hoyolabCommunityApi.searchPost.url, {
+      headers: {
+        'User-Agent': appConfig.network.userAgent.chromeWindows,
+        'x-rpc-client_type': '4',
+        'x-rpc-language': 'ja-jp',
+      },
+      searchParams: {
+        author_type: 0,
+        game_id: (() => {
+          if (game === 'nap') return 8;
+          return 2;
+        })(),
+        is_all_game: false,
+        keyword: '交換コード',
+        order_type: 0,
+        page_num: 1,
+        page_size: 50,
+        scene: 'SCENE_GENERAL',
+      },
+      timeout: appConfig.network.timeout,
+      retry: { limit: appConfig.network.retryCount },
+    })
+    .json();
+  if (!(apiSearchRsp.retcode === 0 && apiSearchRsp.message === 'OK')) throw new Error('HoYoLAB Community API error');
+  const postIdList: string[] = apiSearchRsp.data.list.map((e: any) => e.post.post_id);
+  const postStructDataArray = await (async () => {
+    const tmpArr: Record<string, any>[][] = [];
+    const queue = new PQueue({ concurrency: appConfig.threadCount.network });
+    for (const postId of postIdList) {
+      queue.add(async () => {
+        const apiPostRsp: any = await ky
+          .get('https://' + appConfig.network.hoyolabCommunityApi.getPostFull.url, {
+            headers: {
+              'User-Agent': appConfig.network.userAgent.chromeWindows,
+              'x-rpc-client_type': '4',
+              'x-rpc-language': 'ja-jp',
+            },
+            searchParams: { post_id: postId },
+            timeout: appConfig.network.timeout,
+            retry: { limit: appConfig.network.retryCount },
+          })
+          .json();
+        if (!(apiPostRsp.retcode === 0 && apiPostRsp.message === 'OK')) throw new Error('HoYoLAB Community API error');
+        tmpArr.push(JSON.parse(apiPostRsp.data.post.post.structured_content));
+      });
+    }
+    await queue.onIdle();
+    return tmpArr;
+  })();
+  // console.log(
+  //   [
+  //     ...new Set(
+  //       postStructDataArray
+  //         .map((e) => e.filter((f) => f['attributes'] && f['attributes']['link']).map((f) => f['attributes']['link']))
+  //         .flat(),
+  //     ),
+  //   ]
+  //     .toSorted()
+  //     .join('\n'),
+  // );
+  const redeemLinkRegex = (() => {
+    if (game === 'nap')
+      return /^https?:\/\/zenless\.hoyoverse\.com\/redemption(?:\/m)?(?:\/ja)?(?:\/gift)?\?code=([^&]+)$/;
+    return /^https?:\/\/genshin\.hoyoverse\.com(?:\/m)?(?:\/ja)?(?:\/gift)?\?code=([^&]+)$/;
+  })();
+  return [
+    ...new Set(
+      postStructDataArray
+        .map((e) =>
+          e
+            .filter(
+              (f) =>
+                f['attributes'] &&
+                f['attributes']['link'] &&
+                redeemLinkRegex.exec(f['attributes']['link']) !== null &&
+                redeemLinkRegex.exec(f['attributes']['link'])![1],
+            )
+            .map((f) => redeemLinkRegex.exec(f['attributes']['link'])![1]),
+        )
+        .flat(),
+    ),
+  ].toSorted() as string[];
+}
+
 async function getAvailableCodesHk4e() {
   logger.info('Searching for available redeem codes: hk4e ...');
   const official: string[] = await getAvailableCodesOfficial('hk4e');
+  const community: string[] = await getAvailableCodesCommunity('hk4e');
   const fandom: string[] = await (async () => {
     logger.debug('Searching codes from Fandom Wiki ...');
     const apiRsp: any = await ky
@@ -80,20 +169,16 @@ async function getAvailableCodesHk4e() {
     });
     return result;
   })();
-
-  // console.log({
-  //   hoyolab_api: official,
-  //   fandom_wiki: fandom,
-  //   gamewith: gamewith,
-  // });
-
-  return [...new Set([...official, ...fandom, ...gamewith])];
+  return [...new Set([...official, ...community, ...fandom, ...gamewith])]
+    .toSorted()
+    .filter((e) => !appConfig.redemption.knownExpiredCodes.includes(e));
 }
 
 async function getAvailableCodesNap() {
   logger.info('Searching for available redeem codes: nap ...');
   const official = await getAvailableCodesOfficial('nap');
-  const fandom: string[] = await (async () => {
+  const community: string[] = await getAvailableCodesCommunity('nap');
+  const fandom: Record<'valid' | 'expired', string[]> = await (async () => {
     logger.debug('Searching codes from Fandom Wiki ...');
     const apiRsp: any = await ky
       .get('https://zenless-zone-zero.fandom.com/api.php', {
@@ -110,14 +195,18 @@ async function getAvailableCodesNap() {
     const dom = new JSDOM(textRsp);
     const document = dom.window.document;
     const result: string[] = [];
+    const resultExpired: string[] = [];
     [...[...document.getElementsByClassName('wikitable')][0]!.querySelectorAll('tbody tr')].forEach((tr, rowIndex) => {
       if (rowIndex === 0) return;
-      if ([...tr.querySelectorAll('td')][3]!.textContent.trim().includes('Expired')) return;
+      if ([...tr.querySelectorAll('td')][3]!.textContent.trim().includes('Expired')) {
+        resultExpired.push([...tr.querySelectorAll('td')][0]!.querySelector('code')!.textContent);
+        return;
+      }
       result.push([...tr.querySelectorAll('td')][0]!.querySelector('code')!.textContent);
     });
-    return result;
+    return { valid: result, expired: resultExpired };
   })();
-  const gamewith: string[] = await (async () => {
+  const gamewith: Record<'valid' | 'expired', string[]> = await (async () => {
     logger.debug('Searching codes from GameWith ...');
     const textRsp: any = await ky
       .get('https://gamewith.jp/zenless/452252', {
@@ -132,23 +221,31 @@ async function getAvailableCodesNap() {
     const dom = new JSDOM(textRsp);
     const document = dom.window.document;
     const result: string[] = [];
+    const resultExpired: string[] = [];
     [...document.querySelectorAll('table')]
       .filter((e) => e.querySelector('div .w-clipboard-copy-ui'))
       .forEach((table, tableIndex, tableArray) => {
-        if (tableIndex === tableArray.length - 1) return;
         [...table.querySelectorAll('tr')].forEach((tr, rowIndex) => {
           if (rowIndex === 0) return;
-          result.push(tr.querySelector('div .w-clipboard-copy-ui')!.textContent);
+          if (tableIndex === tableArray.length - 1) {
+            resultExpired.push(tr.querySelector('div .w-clipboard-copy-ui')!.textContent);
+          } else {
+            result.push(tr.querySelector('div .w-clipboard-copy-ui')!.textContent);
+          }
         });
       });
-    return result;
+    return { valid: result, expired: resultExpired };
   })();
-  // console.log({
-  //   hoyolab_api: official,
-  //   fandom_wiki: fandom,
-  //   gamewith: gamewith,
-  // });
-  return [...new Set([...official, ...fandom, ...gamewith])];
+  return [
+    ...new Set([
+      ...official,
+      ...community.filter((e) => !fandom.expired.includes(e) && !gamewith.expired.includes(e)),
+      ...fandom.valid,
+      ...gamewith.valid,
+    ]),
+  ]
+    .toSorted()
+    .filter((e) => !appConfig.redemption.knownExpiredCodes.includes(e));
 }
 
 async function getAllGameServers() {
