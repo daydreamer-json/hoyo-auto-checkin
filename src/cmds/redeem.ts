@@ -1,3 +1,4 @@
+import CliTable3 from 'cli-table3';
 import PQueue from 'p-queue';
 import * as TypesGameEntry from '../types/GameEntry.js';
 import appConfig from '../utils/config.js';
@@ -9,6 +10,7 @@ import webhookUtils from '../utils/webhook.js';
 async function mainCmdHandler() {
   const detectedRedeemCodes: Record<TypesGameEntry.RedeemGameEntry, string[]> = {
     hk4e: await redeemUtils.getAvailableCodesHk4e(),
+    hkrpg: await redeemUtils.getAvailableCodesHkrpg(),
     nap: await redeemUtils.getAvailableCodesNap(),
   };
   console.log(detectedRedeemCodes);
@@ -35,6 +37,47 @@ async function mainCmdHandler() {
     }
     await queue.onIdle();
     return tmpArr;
+  })();
+  (() => {
+    const table = new CliTable3({
+      chars: {
+        top: '',
+        'top-mid': '',
+        'top-left': '',
+        'top-right': '',
+        bottom: '',
+        'bottom-mid': '',
+        'bottom-left': '',
+        'bottom-right': '',
+        left: '',
+        'left-mid': '',
+        mid: '',
+        'mid-mid': '',
+        right: '',
+        'right-mid': '',
+        middle: ' ',
+      },
+      style: { 'padding-left': 0, 'padding-right': 0 },
+    });
+    table.push(
+      ...[
+        ['HoYoLAB', 'Game', 'Server', 'UID', 'Lv'],
+        ...gameDataRspArray
+          .map((a) =>
+            a.data.map((b) =>
+              b.account.map((c) => [
+                a.hoyolabUid,
+                b.game_biz,
+                c.region,
+                { hAlign: 'right' as const, content: c.game_uid },
+                { hAlign: 'right' as const, content: c.level },
+              ]),
+            ),
+          )
+          .flat(2),
+      ],
+    );
+    console.log(table.toString());
   })();
   // console.dir(gameDataRspArray, { depth: null });
   // =======================================

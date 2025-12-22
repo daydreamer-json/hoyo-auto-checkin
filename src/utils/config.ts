@@ -41,6 +41,7 @@ type ConfigType = AllRequired<
       customLayoutPattern: string;
     };
     redemption: {
+      knownIndefiniteCodes: Record<TypesGameEntry.RedeemGameEntry, string>;
       knownExpiredCodes: string[];
     };
   }>
@@ -59,6 +60,10 @@ const initialConfig: ConfigType = {
         url: 'public-operation-hk4e.hoyolab.com/common/apicdkey/api/webExchangeCdkeyHyl',
         qs: { game_biz: 'hk4e_global' },
       },
+      hkrpg: {
+        url: 'public-operation-hkrpg.hoyolab.com/common/apicdkey/api/webExchangeCdkeyHyl',
+        qs: { game_biz: 'hk4e_global' },
+      },
       nap: {
         url: 'public-operation-nap.hoyolab.com/common/apicdkey/api/webExchangeCdkeyHyl',
         qs: { game_biz: 'nap_global' },
@@ -66,6 +71,7 @@ const initialConfig: ConfigType = {
     },
     redeemSearchApi: {
       hk4e: { url: 'bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material', qs: { game_id: 2 } },
+      hkrpg: { url: 'bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material', qs: { game_id: 6 } },
       nap: { url: 'bbs-api-os.hoyolab.com/community/painter/wapi/circle/channel/guide/material', qs: { game_id: 8 } },
     },
     accountApi: {
@@ -93,6 +99,7 @@ const initialConfig: ConfigType = {
     customLayoutPattern: '%[%d{hh:mm:ss.SSS} %-5.0p >%] %m',
   },
   redemption: {
+    knownIndefiniteCodes: { hk4e: 'GENSHINGIFT', hkrpg: 'STARRAILGIFT', nap: 'ZENLESSGIFT' },
     knownExpiredCodes: [],
   },
 };

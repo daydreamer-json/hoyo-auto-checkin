@@ -42,6 +42,7 @@ async function getAvailableCodesCommunity(game: TypesGameEntry.RedeemGameEntry):
         author_type: 0,
         game_id: (() => {
           if (game === 'nap') return 8;
+          if (game === 'hkrpg') return 6;
           return 2;
         })(),
         is_all_game: false,
@@ -95,6 +96,7 @@ async function getAvailableCodesCommunity(game: TypesGameEntry.RedeemGameEntry):
   const redeemLinkRegex = (() => {
     if (game === 'nap')
       return /^https?:\/\/zenless\.hoyoverse\.com\/redemption(?:\/m)?(?:\/ja)?(?:\/gift)?\?code=([^&]+)$/;
+    if (game === 'hkrpg') return /^https?:\/\/hsr\.hoyoverse\.com(?:\/m)?(?:\/ja)?(?:\/gift)?\?code=([^&]+)$/;
     return /^https?:\/\/genshin\.hoyoverse\.com(?:\/m)?(?:\/ja)?(?:\/gift)?\?code=([^&]+)$/;
   })();
   return [
@@ -109,7 +111,8 @@ async function getAvailableCodesCommunity(game: TypesGameEntry.RedeemGameEntry):
                 redeemLinkRegex.exec(f['attributes']['link']) !== null &&
                 redeemLinkRegex.exec(f['attributes']['link'])![1],
             )
-            .map((f) => redeemLinkRegex.exec(f['attributes']['link'])![1]),
+            .map((f) => redeemLinkRegex.exec(f['attributes']['link'])![1])
+            .map((f) => (game === 'hkrpg' ? f?.toUpperCase() : f)),
         )
         .flat(),
     ),
@@ -169,9 +172,86 @@ async function getAvailableCodesHk4e() {
     });
     return result;
   })();
-  return [...new Set([...official, ...community, ...fandom, ...gamewith])]
-    .toSorted()
-    .filter((e) => preCheckIsCodeNotExpired(e));
+  // console.log({ official, community, gamewith, fandom });
+  return [
+    ...new Set(
+      [...official, ...community, ...fandom, ...gamewith]
+        .filter((e) => !Object.values(appConfig.redemption.knownIndefiniteCodes).includes(e))
+        .toSorted(),
+    ),
+    appConfig.redemption.knownIndefiniteCodes.hk4e,
+  ].filter((e) => preCheckIsCodeNotExpired(e));
+}
+
+async function getAvailableCodesHkrpg() {
+  logger.info('Searching for available redeem codes: hkrpg ...');
+  const official: string[] = await getAvailableCodesOfficial('hkrpg');
+  const community: string[] = await getAvailableCodesCommunity('hkrpg');
+  const fandom: Record<'valid' | 'expired', string[]> = await (async () => {
+    logger.debug('Searching codes from Fandom Wiki ...');
+    const apiRsp: any = await ky
+      .get('https://honkai-star-rail.fandom.com/api.php', {
+        headers: {
+          'User-Agent': appConfig.network.userAgent.chromeWindows,
+        },
+        searchParams: { action: 'parse', format: 'json', page: 'Redemption Code' },
+        timeout: appConfig.network.timeout,
+        retry: { limit: appConfig.network.retryCount },
+      })
+      .json();
+    const textRsp: string = apiRsp.parse.text['*'];
+    logger.trace('Parsing HTML to generate a DOM tree ...');
+    const dom = new JSDOM(textRsp);
+    const document = dom.window.document;
+    const result: string[] = [];
+    const resultExpired: string[] = [];
+    [...[...document.getElementsByClassName('wikitable')][0]!.querySelectorAll('tbody tr')].forEach((tr, rowIndex) => {
+      if (rowIndex === 0) return;
+      if ([...tr.querySelectorAll('td')][3]!.textContent.trim().includes('Expired')) {
+        if ([...tr.querySelectorAll('td')][0]!.querySelector('code'))
+          resultExpired.push([...tr.querySelectorAll('td')][0]!.querySelector('code')!.textContent);
+        return;
+      }
+      if ([...tr.querySelectorAll('td')][0]!.querySelector('code'))
+        result.push([...tr.querySelectorAll('td')][0]!.querySelector('code')!.textContent);
+    });
+    return { valid: result, expired: resultExpired };
+  })();
+  const gamewith: string[] = await (async () => {
+    logger.debug('Searching codes from GameWith ...');
+    const textRsp: any = await ky
+      .get('https://gamewith.jp/houkaistarrail/article/show/396232', {
+        headers: {
+          'User-Agent': appConfig.network.userAgent.chromeWindows,
+        },
+        timeout: appConfig.network.timeout,
+        retry: { limit: appConfig.network.retryCount },
+      })
+      .text();
+    logger.trace('Parsing HTML to generate a DOM tree ...');
+    const dom = new JSDOM(textRsp);
+    const document = dom.window.document;
+    const result: string[] = [];
+    [...document.querySelectorAll('table')]
+      .filter((e) => e.querySelector('div .w-clipboard-copy-ui'))
+      .forEach((table, tableIndex) => {
+        [...table.querySelectorAll('tr')].forEach((tr, rowIndex) => {
+          if (rowIndex === 0) return;
+          if (tableIndex === 0) {
+            result.push(tr.querySelector('div .w-clipboard-copy-ui')!.textContent);
+          }
+        });
+      });
+    return result;
+  })();
+  return [
+    ...new Set(
+      [...official, ...community.filter((e) => !fandom.expired.includes(e)), ...fandom.valid, ...gamewith]
+        .filter((e) => !Object.values(appConfig.redemption.knownIndefiniteCodes).includes(e))
+        .toSorted(),
+    ),
+    appConfig.redemption.knownIndefiniteCodes.hkrpg,
+  ].filter((e) => preCheckIsCodeNotExpired(e));
 }
 
 async function getAvailableCodesNap() {
@@ -236,16 +316,20 @@ async function getAvailableCodesNap() {
       });
     return { valid: result, expired: resultExpired };
   })();
+  // console.log({ official, community, gamewith, fandom });
   return [
-    ...new Set([
-      ...official,
-      ...community.filter((e) => !fandom.expired.includes(e) && !gamewith.expired.includes(e)),
-      ...fandom.valid,
-      ...gamewith.valid,
-    ]),
-  ]
-    .toSorted()
-    .filter((e) => preCheckIsCodeNotExpired(e));
+    ...new Set(
+      [
+        ...official,
+        ...community.filter((e) => !fandom.expired.includes(e) && !gamewith.expired.includes(e)),
+        ...fandom.valid,
+        ...gamewith.valid,
+      ]
+        .filter((e) => !Object.values(appConfig.redemption.knownIndefiniteCodes).includes(e))
+        .toSorted(),
+    ),
+    appConfig.redemption.knownIndefiniteCodes.nap,
+  ].filter((e) => preCheckIsCodeNotExpired(e));
 }
 
 function preCheckIsCodeNotExpired(code: string) {
@@ -263,7 +347,7 @@ async function getAllGameServers() {
   }[] = [];
   logger.info('Fetching game server list ...');
   for (const gameName of TypesGameEntry.gameEntryArray) {
-    logger.debug('Fetching game server list: ' + gameName + ' ...');
+    // logger.debug('Fetching game server list: ' + gameName + ' ...');
     const serverList = await (async () => {
       const apiRegionRsp: any = await ky
         .get('https://' + appConfig.network.accountApi.getServer.url, {
@@ -275,6 +359,7 @@ async function getAllGameServers() {
         .json();
       return apiRegionRsp.data.list as { name: string; region: string }[];
     })();
+    logger.trace(`Found game servers: ${gameName}: ${serverList.map((e) => e.region).join(', ')}`);
     retObj.push({
       game: gameName,
       game_biz: gameName + '_global',
@@ -301,7 +386,7 @@ async function getAllGameAccounts(
     account: { region: string; game_uid: string; nickname: string; level: number }[];
   }[] = [];
   for (const gameServersEntry of gameServers) {
-    logger.trace(`Fetching game data for account: ${hoyolabUid}, ${gameServersEntry.game_biz} ...`);
+    // logger.trace(`Fetching game data for account: ${hoyolabUid}, ${gameServersEntry.game_biz} ...`);
     retObj.push({
       game: gameServersEntry.game,
       game_biz: gameServersEntry.game_biz,
@@ -323,16 +408,20 @@ async function getAllGameAccounts(
             })
             .json();
           if (apiGameDataRsp.data.list.length === 0) continue;
+          const tmpObj = omitDeep(apiGameDataRsp.data.list[0], [
+            ['game_biz'],
+            ['region'],
+            ['is_chosen'],
+            ['region_name'],
+            ['is_official'],
+            ['unmask'],
+          ]);
+          logger.trace(
+            `Found game data: ${hoyolabUid}, ${gameServersEntry.game_biz}, ${serverListEntry.region}, ${tmpObj.game_uid}, Lv${tmpObj.level}`,
+          );
           tmpArr.push({
             region: serverListEntry.region,
-            ...omitDeep(apiGameDataRsp.data.list[0], [
-              ['game_biz'],
-              ['region'],
-              ['is_chosen'],
-              ['region_name'],
-              ['is_official'],
-              ['unmask'],
-            ]),
+            ...tmpObj,
           });
         }
         return tmpArr;
@@ -391,6 +480,7 @@ async function doRedeemCode(
 
 export default {
   getAvailableCodesHk4e,
+  getAvailableCodesHkrpg,
   getAvailableCodesNap,
   getAllGameAccounts,
   getAllGameServers,
