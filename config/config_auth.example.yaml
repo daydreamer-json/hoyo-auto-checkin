@@ -1,17 +1,22 @@
-discordWebhookList:
+discordWebhookList: # Discord webhook URL list
   - https://discord.com/api/webhooks/looooooonglonglongtoken
 userList:
   - displayUserName: Friendly User Name
     userName: sample@example.com
     loginType: mail # username or mail
-    hoyolabUid: 123456789
-    discordUid: '123456789123456789' # must be string
-    hoyolabCookieVersion: 1 # 1 or 2
+    hoyolabUid: 123456789 # number
+    discordUid: '123456789123456789' # string, not discord user name
+    hoyolabCookieVersion: 2 # 2 or 1 (deprecated)
     hoyolabCookie:
       ltoken: ltokenCookie
     hoyolabLang: ja-jp
-    enableService:
+    enableService: # boolean, which game's login bonus to claim
       hk4e: true # Genshin Impact
       hkrpg: true # Honkai: Star Rail
       bh3: true # Honkai Impact 3rd
       nap: true # Zenless Zone Zero
+knownUsedCodes: # Define known used code. This prevents wasting time on unnecessary code verification
+  - hoyolabUid: 123456789
+    game: hk4e # game id
+    region: os_asia # game server region id
+    code: GENSHINGIFT

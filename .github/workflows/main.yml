@@ -1,5 +1,7 @@
 name: Auto claim workflow
 on:
+  # Scheduled trigger is disabled by default
+  # Uncommenting the following two lines will enable it
   # schedule:
   #   - cron: '0 16 * * *'
   workflow_dispatch:
