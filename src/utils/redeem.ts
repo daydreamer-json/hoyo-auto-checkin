@@ -76,7 +76,11 @@ async function getAvailableCodesCommunity(game: TypesGameEntry.RedeemGameEntry):
           })
           .json();
         if (!(apiPostRsp.retcode === 0 && apiPostRsp.message === 'OK')) throw new Error('HoYoLAB Community API error');
-        tmpArr.push(JSON.parse(apiPostRsp.data.post.post.structured_content));
+        try {
+          tmpArr.push(JSON.parse(apiPostRsp.data.post.post.structured_content));
+        } catch (err) {
+          logger.warn('Community post parse error. Content: ' + apiPostRsp.data.post.post.structured_content);
+        }
       });
     }
     await queue.onIdle();

@@ -5,6 +5,7 @@ node_modules
 /*.exe
 bin/reaper/reaper-reginfo2.ini
 build
+memo
 
 # output
 out
