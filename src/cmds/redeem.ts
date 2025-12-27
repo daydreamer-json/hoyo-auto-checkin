@@ -144,7 +144,20 @@ async function mainCmdHandler() {
     }
     await queue.onIdle();
   })();
-  await webhookUtils.sendDiscordWebhook(webhookUtils.buildWebhookContextRedeemer(redeemResultArray));
+  await (async () => {
+    const codesOk = [...new Set(redeemResultArray.filter((e) => e.result.resultType === 'ok').map((e) => e.code))];
+    const codesExpired = [
+      ...new Set(redeemResultArray.filter((e) => e.result.resultType === 'expired').map((e) => e.code)),
+    ];
+    const codesReachedUsageLimit = [
+      ...new Set(redeemResultArray.filter((e) => e.result.resultType === 'reachedUsageLimit').map((e) => e.code)),
+    ];
+    // const codesNotEnoughLv = redeemResultArray.filter((e) => e.result.resultType === 'notEnoughLv');
+    const codesUnknown = redeemResultArray.filter((e) => e.result.resultType === 'unknown');
+    if (codesOk.length + codesExpired.length + codesReachedUsageLimit.length + codesUnknown.length > 0) {
+      await webhookUtils.sendDiscordWebhook(webhookUtils.buildWebhookContextRedeemer(redeemResultArray));
+    }
+  })();
 }
 
 export default mainCmdHandler;

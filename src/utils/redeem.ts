@@ -462,17 +462,33 @@ async function doRedeemCode(
       retry: { limit: appConfig.network.retryCount },
     })
     .json();
+  type ResultTypeType = 'ok' | 'used' | 'expired' | 'reachedUsageLimit' | 'notEnoughLv' | 'unknown';
+  /*
+    used: already used for the account
+    expired: the code has expired
+    reachedUsageLimit: the code has a usage limit and the limit has been reached
+    notEnoughAR: the account's player rank (or something similar) is insufficient
+  */
   const retObj: {
     isSuccess: boolean;
-    resultType: 'ok' | 'used' | 'expired' | 'unknown';
+    resultType: ResultTypeType;
     response: any;
   } = {
     isSuccess: Boolean(apiRsp.retcode === 0 || apiRsp.message === 'OK'),
     resultType: (() => {
-      if (apiRsp.retcode === 0 || apiRsp.message === 'OK') return 'ok';
-      if (apiRsp.retcode === -2017) return 'used';
-      if (apiRsp.retcode === -2001) return 'expired';
-      return 'unknown';
+      const retcodeMapArray: [number, ResultTypeType][] = [
+        [0, 'ok'],
+        [-2001, 'expired'],
+        [-2006, 'reachedUsageLimit'],
+        [-2011, 'notEnoughLv'],
+        [-2017, 'used'],
+      ];
+      if (retcodeMapArray.map((e) => e[0]).includes(apiRsp.retcode)) {
+        if (apiRsp.retcode === 0 || apiRsp.message === 'OK') return 'ok';
+        return retcodeMapArray.find((e) => e[0] === apiRsp.retcode)![1];
+      } else {
+        return 'unknown';
+      }
     })(),
     response: apiRsp,
   };

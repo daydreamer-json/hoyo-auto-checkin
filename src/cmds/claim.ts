@@ -10,8 +10,15 @@ async function mainCmdHandler() {
   timer.start = performance.now();
   const rsp = await signUtils.signAllUser();
   timer.end = performance.now();
-  const webhookContext = webhookUtils.bulidWebhookContext(rsp, timer);
-  await webhookUtils.sendDiscordWebhook(webhookContext);
+  if (
+    rsp
+      .map((e) => e.response)
+      .flat()
+      .filter((e) => e.isChecked === false).length > 0
+  ) {
+    const webhookContext = webhookUtils.bulidWebhookContext(rsp, timer);
+    await webhookUtils.sendDiscordWebhook(webhookContext);
+  }
   logger.info('Completed');
 }
 

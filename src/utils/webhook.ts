@@ -107,11 +107,23 @@ function buildWebhookContextRedeemer(
     title: 'Redemption Result',
     // description: `Processed in: **${Math.ceil(timer.end - timer.start)} ms**`,
     description: (() => {
-      const okCodes = [...new Set(redeemRetArr.filter((e) => ['ok'].includes(e.result.resultType)).map((e) => e.code))];
-      const expiredCodes = [
-        ...new Set(redeemRetArr.filter((e) => ['expired'].includes(e.result.resultType)).map((e) => e.code)),
+      const codesOk = [...new Set(redeemRetArr.filter((e) => e.result.resultType === 'ok').map((e) => e.code))];
+      const codesExpired = [
+        ...new Set(redeemRetArr.filter((e) => e.result.resultType === 'expired').map((e) => e.code)),
       ];
-      return `Found **${okCodes.length}** valid codes\nFound **${expiredCodes.length}** expired codes`;
+      const codesReachedUsageLimit = [
+        ...new Set(redeemRetArr.filter((e) => e.result.resultType === 'reachedUsageLimit').map((e) => e.code)),
+      ];
+      const codesNotEnoughLv = redeemRetArr.filter((e) => e.result.resultType === 'notEnoughLv');
+      const codesUnknown = redeemRetArr.filter((e) => e.result.resultType === 'unknown');
+      // return `Found **${codesOk.length}** valid codes\nFound **${codesExpired.length}** expired codes`;
+      return [
+        `**${codesOk.length}** codes success`,
+        `**${codesExpired.length}** codes expired`,
+        `**${codesReachedUsageLimit.length}** codes reached limit`,
+        `**${codesNotEnoughLv.length}** accounts not enough lv`,
+        `**${codesUnknown.length}** unknown error occured`,
+      ].join('\n');
     })(),
     fields: (() => {
       const outArr: { name: string; value: string; inline: boolean }[] = [];
