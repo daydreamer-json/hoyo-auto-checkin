@@ -31,33 +31,47 @@ async function getAvailableCodesOfficial(game: TypesGameEntry.RedeemGameEntry): 
 
 async function getAvailableCodesCommunity(game: TypesGameEntry.RedeemGameEntry): Promise<string[]> {
   logger.debug('Searching codes from HoYoLAB community ...');
-  const apiSearchRsp: any = await ky
-    .get('https://' + appConfig.network.hoyolabCommunityApi.searchPost.url, {
-      headers: {
-        'User-Agent': appConfig.network.userAgent.chromeWindows,
-        'x-rpc-client_type': '4',
-        'x-rpc-language': 'ja-jp',
-      },
-      searchParams: {
-        author_type: 0,
-        game_id: (() => {
-          if (game === 'nap') return 8;
-          if (game === 'hkrpg') return 6;
-          return 2;
-        })(),
-        is_all_game: false,
-        keyword: '交換コード',
-        order_type: 0,
-        page_num: 1,
-        page_size: 50,
-        scene: 'SCENE_GENERAL',
-      },
-      timeout: appConfig.network.timeout,
-      retry: { limit: appConfig.network.retryCount },
-    })
-    .json();
-  if (!(apiSearchRsp.retcode === 0 && apiSearchRsp.message === 'OK')) throw new Error('HoYoLAB Community API error');
-  const postIdList: string[] = apiSearchRsp.data.list.map((e: any) => e.post.post_id);
+  const defaultApiReqConfig = {
+    headers: {
+      'User-Agent': appConfig.network.userAgent.chromeWindows,
+      'x-rpc-client_type': '4',
+      'x-rpc-language': 'ja-jp',
+    },
+    timeout: appConfig.network.timeout,
+    retry: { limit: appConfig.network.retryCount },
+  };
+  const defaultApiReqSearchParams = {
+    author_type: 0,
+    game_id: game === 'nap' ? 8 : game === 'hkrpg' ? 6 : 2,
+    is_all_game: false,
+    keyword: '交換コード',
+    page_num: 1,
+    page_size: 50,
+    scene: 'SCENE_GENERAL',
+  };
+  const apiSearchRspPopular: any = await (async () => {
+    const rsp: any = await ky
+      .get('https://' + appConfig.network.hoyolabCommunityApi.searchPost.url, {
+        ...defaultApiReqConfig,
+        searchParams: { ...defaultApiReqSearchParams, order_type: 0 },
+      })
+      .json();
+    if (!(rsp.retcode === 0 && rsp.message === 'OK')) throw new Error('HoYoLAB Community API error');
+    return rsp;
+  })();
+  const apiSearchRspRecent: any = await (async () => {
+    const rsp: any = await ky
+      .get('https://' + appConfig.network.hoyolabCommunityApi.searchPost.url, {
+        ...defaultApiReqConfig,
+        searchParams: { ...defaultApiReqSearchParams, order_type: 2 },
+      })
+      .json();
+    if (!(rsp.retcode === 0 && rsp.message === 'OK')) throw new Error('HoYoLAB Community API error');
+    return rsp;
+  })();
+  const postIdList: string[] = [
+    ...new Set([...apiSearchRspPopular.data.list, ...apiSearchRspRecent.data.list].map((e: any) => e.post.post_id)),
+  ];
   const postStructDataArray = await (async () => {
     const tmpArr: Record<string, any>[][] = [];
     const queue = new PQueue({ concurrency: appConfig.threadCount.network });
@@ -79,7 +93,9 @@ async function getAvailableCodesCommunity(game: TypesGameEntry.RedeemGameEntry):
         try {
           tmpArr.push(JSON.parse(apiPostRsp.data.post.post.structured_content));
         } catch (err) {
-          logger.warn('Community post parse error. Content: ' + apiPostRsp.data.post.post.structured_content);
+          if (apiPostRsp.data.post.post.structured_content !== '') {
+            logger.warn('Community post parse error. Content: ' + apiPostRsp.data.post.post.structured_content);
+          }
         }
       });
     }
@@ -462,12 +478,13 @@ async function doRedeemCode(
       retry: { limit: appConfig.network.retryCount },
     })
     .json();
-  type ResultTypeType = 'ok' | 'used' | 'expired' | 'reachedUsageLimit' | 'notEnoughLv' | 'unknown';
+  type ResultTypeType = 'ok' | 'used' | 'expired' | 'reachedUsageLimit' | 'notEnoughLv' | 'usedByOthers' | 'unknown';
   /*
-    used: already used for the account
     expired: the code has expired
     reachedUsageLimit: the code has a usage limit and the limit has been reached
-    notEnoughAR: the account's player rank (or something similar) is insufficient
+    notEnoughLv: the account's player rank (or something similar) is insufficient
+    used: already used for the account
+    usedByOthers: already used by others (one-time code)
   */
   const retObj: {
     isSuccess: boolean;
@@ -482,6 +499,7 @@ async function doRedeemCode(
         [-2006, 'reachedUsageLimit'],
         [-2011, 'notEnoughLv'],
         [-2017, 'used'],
+        [-2018, 'usedByOthers'],
       ];
       if (retcodeMapArray.map((e) => e[0]).includes(apiRsp.retcode)) {
         if (apiRsp.retcode === 0 || apiRsp.message === 'OK') return 'ok';

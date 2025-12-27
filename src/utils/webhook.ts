@@ -109,7 +109,9 @@ function buildWebhookContextRedeemer(
     description: (() => {
       const codesOk = [...new Set(redeemRetArr.filter((e) => e.result.resultType === 'ok').map((e) => e.code))];
       const codesExpired = [
-        ...new Set(redeemRetArr.filter((e) => e.result.resultType === 'expired').map((e) => e.code)),
+        ...new Set(
+          redeemRetArr.filter((e) => ['expired', 'usedByOthers'].includes(e.result.resultType)).map((e) => e.code),
+        ),
       ];
       const codesReachedUsageLimit = [
         ...new Set(redeemRetArr.filter((e) => e.result.resultType === 'reachedUsageLimit').map((e) => e.code)),

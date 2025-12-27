@@ -3,6 +3,7 @@ import PQueue from 'p-queue';
 import * as TypesGameEntry from '../types/GameEntry.js';
 import appConfig from '../utils/config.js';
 import configAuth from '../utils/configAuth.js';
+import configWriterUtils from '../utils/configWriter.js';
 import logger from '../utils/logger.js';
 import redeemUtils from '../utils/redeem.js';
 import webhookUtils from '../utils/webhook.js';
@@ -118,6 +119,15 @@ async function mainCmdHandler() {
               ) {
                 continue;
               }
+              if (
+                redeemResultArray.find(
+                  (e) =>
+                    e.code === codeEntry &&
+                    ['expired', 'reachedUsageLimit', 'usedByOthers'].includes(e.result.resultType),
+                )
+              ) {
+                continue;
+              }
               const result = await redeemUtils.doRedeemCode(
                 gameDataRspEntry.game as TypesGameEntry.RedeemGameEntry,
                 gameAccEntry.region,
@@ -147,15 +157,19 @@ async function mainCmdHandler() {
   await (async () => {
     const codesOk = [...new Set(redeemResultArray.filter((e) => e.result.resultType === 'ok').map((e) => e.code))];
     const codesExpired = [
-      ...new Set(redeemResultArray.filter((e) => e.result.resultType === 'expired').map((e) => e.code)),
+      ...new Set(
+        redeemResultArray
+          .filter((e) => ['expired', 'reachedUsageLimit', 'usedByOthers'].includes(e.result.resultType))
+          .map((e) => e.code),
+      ),
     ];
-    const codesReachedUsageLimit = [
-      ...new Set(redeemResultArray.filter((e) => e.result.resultType === 'reachedUsageLimit').map((e) => e.code)),
-    ];
-    // const codesNotEnoughLv = redeemResultArray.filter((e) => e.result.resultType === 'notEnoughLv');
     const codesUnknown = redeemResultArray.filter((e) => e.result.resultType === 'unknown');
-    if (codesOk.length + codesExpired.length + codesReachedUsageLimit.length + codesUnknown.length > 0) {
+    if (codesOk.length + codesExpired.length + codesUnknown.length > 0) {
       await webhookUtils.sendDiscordWebhook(webhookUtils.buildWebhookContextRedeemer(redeemResultArray));
+    }
+    if (codesExpired.length > 0) {
+      logger.info('New expired codes detected. Writing to config.yaml ...');
+      await configWriterUtils.addKnownExpiredCodes(codesExpired);
     }
   })();
 }
