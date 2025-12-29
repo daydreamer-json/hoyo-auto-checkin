@@ -109,17 +109,9 @@ async function mainCmdHandler() {
             const redeemCodeArray = detectedRedeemCodes[gameName];
             for (const [codeEntryIndex, codeEntry] of Object.entries(redeemCodeArray)) {
               if (
-                configAuth.knownUsedCodes.find(
-                  (e) =>
-                    e.hoyolabUid === authUserEntry.hoyolabUid &&
-                    e.game === gameDataRspEntry.game &&
-                    e.region === gameAccEntry.region &&
-                    e.code === codeEntry,
-                )
-              ) {
-                continue;
-              }
-              if (
+                configAuth.knownUsedCodes[authUserEntry.hoyolabUid]?.[gameName]?.[gameAccEntry.region]?.includes(
+                  codeEntry,
+                ) ||
                 redeemResultArray.find(
                   (e) =>
                     e.code === codeEntry &&
@@ -129,7 +121,7 @@ async function mainCmdHandler() {
                 continue;
               }
               const result = await redeemUtils.doRedeemCode(
-                gameDataRspEntry.game as TypesGameEntry.RedeemGameEntry,
+                gameName,
                 gameAccEntry.region,
                 codeEntry,
                 authUserEntry.hoyolabUid,

@@ -56,27 +56,34 @@ function bulidWebhookContext(
       return errorLevelToPretty(maxErrorLevel, 'emojiText');
     })(),
     description: `Processed in: **${Math.ceil(timer.end - timer.start)} ms**`,
-    fields: signAllRsp.map((user) => ({
-      name: user.auth.displayUserName,
-      value:
-        '```\n' +
-        user.response
-          .map(
-            (userRsp) =>
-              (userRsp.gameEntry + ':').padEnd(6, ' ') +
-              ' ' +
-              errorLevelToPretty(userRsp.errorLevel, 'emoji') +
-              ' ' +
-              (() => {
-                if (userRsp.isChecked) return 'Already claimed';
-                if (userRsp.isOK) return 'OK';
-                return userRsp.json['message'].replaceAll('\n', ' ');
-              })(),
-          )
-          .join('\n') +
-        '\n```',
-      inline: false,
-    })),
+    fields: (() => {
+      const flattedRsp = signAllRsp.map((e) => e.response).flat();
+      if (flattedRsp.filter((e) => e.isOK === true && e.isChecked === false).length === flattedRsp.length) {
+        return [];
+      } else {
+        return signAllRsp.map((user) => ({
+          name: user.auth.displayUserName,
+          value:
+            '```\n' +
+            user.response
+              .map(
+                (userRsp) =>
+                  (userRsp.gameEntry + ':').padEnd(6, ' ') +
+                  ' ' +
+                  errorLevelToPretty(userRsp.errorLevel, 'emoji') +
+                  ' ' +
+                  (() => {
+                    if (userRsp.isChecked) return 'Already claimed';
+                    if (userRsp.isOK) return 'OK';
+                    return userRsp.json['message'].replaceAll('\n', ' ');
+                  })(),
+              )
+              .join('\n') +
+            '\n```',
+          inline: false,
+        }));
+      }
+    })(),
     color: (() => {
       const maxErrorLevel = Math.max(...signAllRsp.flatMap((e) => e.response).map((e) => e.errorLevel));
       return parseInt(errorLevelToPretty(maxErrorLevel, 'colorHex'), 16);

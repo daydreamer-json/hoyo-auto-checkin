@@ -25,12 +25,15 @@ type ConfigType = AllRequired<
       hoyolabLang: string;
       enableService: Record<TypesGameEntry.GameEntry, boolean>;
     }[];
+    // knownUsedCodes: {
+    //   hoyolabUid: number;
+    //   game: TypesGameEntry.RedeemGameEntry;
+    //   region: string;
+    //   code: string;
+    // }[];
     knownUsedCodes: {
-      hoyolabUid: number;
-      game: TypesGameEntry.RedeemGameEntry;
-      region: string;
-      code: string;
-    }[];
+      [hoyolabUid: number]: Record<TypesGameEntry.RedeemGameEntry, { [region: string]: string[] }>;
+    };
   }>
 >;
 
@@ -49,7 +52,7 @@ const initialConfig: ConfigType = {
       enableService: { hk4e: true, hkrpg: true, bh3: true, nap: true },
     },
   ],
-  knownUsedCodes: [],
+  knownUsedCodes: {},
 };
 
 const filePath = 'config/config_auth.yaml';

@@ -16,7 +16,6 @@ userList:
       bh3: true # Honkai Impact 3rd
       nap: true # Zenless Zone Zero
 knownUsedCodes: # Define known used code. This prevents wasting time on unnecessary code verification
-  - hoyolabUid: 123456789
-    game: hk4e # game id
-    region: os_asia # game server region id
-    code: GENSHINGIFT
+  "123456789": # hoyolabUid
+    hk4e: # game id
+      os_asia: [GENSHINGIFT] # game region id: array of codes
