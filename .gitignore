@@ -1,4 +1,5 @@
 config/config_auth.yaml
+config/encrypt_config_auth.sh
 
 # dependencies (bun install)
 node_modules

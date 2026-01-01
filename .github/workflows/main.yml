@@ -20,9 +20,12 @@ jobs:
         uses: oven-sh/setup-bun@v2
       - name: Create auth config from GitHub Secrets
         run: |
-          mkdir -p config
-          echo '${{ secrets.CONFIG_AUTH_YAML }}' > config/config_auth.yaml
+          chmod a+rx ./config/decrypt_config_auth.sh
+          ./config/decrypt_config_auth.sh
         shell: bash
+        env:
+          CONFIG_AUTH_ENCRYPTION_KEY: ${{ secrets.CONFIG_AUTH_ENCRYPTION_KEY }}
+          CONFIG_AUTH_ENCRYPTION_IV: ${{ secrets.CONFIG_AUTH_ENCRYPTION_IV }}
       - name: Install dependencies
         run: bun install
       - name: Run auto claim
