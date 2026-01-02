@@ -132,7 +132,8 @@ async function getAvailableCodesCommunity(game: TypesGameEntry.RedeemGameEntry):
                 redeemLinkRegex.exec(f['attributes']['link'])![1],
             )
             .map((f) => redeemLinkRegex.exec(f['attributes']['link'])![1])
-            .map((f) => (game === 'hkrpg' ? f?.toUpperCase() : f)),
+            .map((f) => (game === 'hkrpg' ? f?.toUpperCase() : f))
+            .map((f) => f?.replace(/( )/g, '')),
         )
         .flat(),
     ),
