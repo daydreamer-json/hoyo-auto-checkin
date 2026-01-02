@@ -86,12 +86,7 @@ async function mainCmdHandler() {
     hoyolabUid: number;
     game: TypesGameEntry.RedeemGameEntry;
     game_biz: string;
-    account: {
-      region: string;
-      game_uid: string;
-      nickname: string;
-      level: number;
-    };
+    account: { region: string; game_uid: string; nickname: string; level: number };
     code: string;
     result: Awaited<ReturnType<typeof redeemUtils.doRedeemCode>>;
   }[] = [];
@@ -145,6 +140,9 @@ async function mainCmdHandler() {
       }
     }
     await queue.onIdle();
+  })();
+  await (async () => {
+    await configWriterUtils.addKnownUsedCodes(redeemResultArray);
   })();
   await (async () => {
     const codesOk = [...new Set(redeemResultArray.filter((e) => e.result.resultType === 'ok').map((e) => e.code))];

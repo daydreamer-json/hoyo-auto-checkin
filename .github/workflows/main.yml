@@ -26,6 +26,7 @@ jobs:
         env:
           CONFIG_AUTH_ENCRYPTION_KEY: ${{ secrets.CONFIG_AUTH_ENCRYPTION_KEY }}
           CONFIG_AUTH_ENCRYPTION_IV: ${{ secrets.CONFIG_AUTH_ENCRYPTION_IV }}
+          CONFIG_AUTH_YAML: ${{ secrets.CONFIG_AUTH_YAML }}
       - name: Install dependencies
         run: bun install
       - name: Run auto claim
@@ -40,6 +41,15 @@ jobs:
           max_attempts: 5
           timeout_minutes: 10
           command: bun run src/main.ts redeem
+      - name: Encrypt auth config
+        run: |
+          chmod a+rx ./config/encrypt_config_auth.sh
+          ./config/encrypt_config_auth.sh
+        shell: bash
+        env:
+          CONFIG_AUTH_ENCRYPTION_KEY: ${{ secrets.CONFIG_AUTH_ENCRYPTION_KEY }}
+          CONFIG_AUTH_ENCRYPTION_IV: ${{ secrets.CONFIG_AUTH_ENCRYPTION_IV }}
+          CONFIG_AUTH_YAML: ${{ secrets.CONFIG_AUTH_YAML }}
       - name: Git staging, commit, push
         continue-on-error: true
         run: |

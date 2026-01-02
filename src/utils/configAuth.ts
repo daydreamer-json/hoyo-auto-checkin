@@ -2,40 +2,31 @@ import bun from 'bun';
 import YAML from 'yaml';
 import * as TypesGameEntry from '../types/GameEntry.js';
 
-type Freeze<T> = Readonly<{
-  [P in keyof T]: T[P] extends object ? Freeze<T[P]> : T[P];
-}>;
-type AllRequired<T> = Required<{
-  [P in keyof T]: T[P] extends object ? Freeze<T[P]> : T[P];
-}>;
-
-type ConfigType = AllRequired<
-  Freeze<{
-    discordWebhookList: string[];
-    userList: {
-      displayUserName: string;
-      userName: string;
-      loginType: 'username' | 'mail';
-      hoyolabUid: number;
-      discordUid: string;
-      hoyolabCookieVersion: 1 | 2;
-      hoyolabCookie: {
-        ltoken: string;
-      };
-      hoyolabLang: string;
-      enableService: Record<TypesGameEntry.GameEntry, boolean>;
-    }[];
-    // knownUsedCodes: {
-    //   hoyolabUid: number;
-    //   game: TypesGameEntry.RedeemGameEntry;
-    //   region: string;
-    //   code: string;
-    // }[];
-    knownUsedCodes: {
-      [hoyolabUid: number]: Record<TypesGameEntry.RedeemGameEntry, { [region: string]: string[] }>;
+type ConfigType = {
+  discordWebhookList: string[];
+  userList: {
+    displayUserName: string;
+    userName: string;
+    loginType: 'username' | 'mail';
+    hoyolabUid: number;
+    discordUid: string;
+    hoyolabCookieVersion: 1 | 2;
+    hoyolabCookie: {
+      ltoken: string;
     };
-  }>
->;
+    hoyolabLang: string;
+    enableService: Record<TypesGameEntry.GameEntry, boolean>;
+  }[];
+  // knownUsedCodes: {
+  //   hoyolabUid: number;
+  //   game: TypesGameEntry.RedeemGameEntry;
+  //   region: string;
+  //   code: string;
+  // }[];
+  knownUsedCodes: {
+    [hoyolabUid: number]: Partial<Record<TypesGameEntry.RedeemGameEntry, { [region: string]: string[] }>>;
+  };
+};
 
 const initialConfig: ConfigType = {
   discordWebhookList: ['https://discord.com/api/webhooks/hogehoge/fugafuga'],
