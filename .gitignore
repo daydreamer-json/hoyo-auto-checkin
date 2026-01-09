@@ -1,5 +1,6 @@
 config/config_auth.yaml
 config/encrypt_config_auth_private.sh
+config/decrypt_config_auth_private.sh
 
 # dependencies (bun install)
 node_modules

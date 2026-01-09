@@ -172,7 +172,10 @@ function buildWebhookContextRedeemer(
       });
       return outArr;
     })(),
-    color: 0xa0a0a0,
+    color: (() => {
+      const codesOk = [...new Set(redeemRetArr.filter((e) => e.result.resultType === 'ok').map((e) => e.code))];
+      return codesOk.length !== 0 ? 0x00ff00 : 0xa0a0a0;
+    })(),
     timestamp: DateTime.now().toISO(),
   };
 }

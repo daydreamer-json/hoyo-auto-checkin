@@ -479,14 +479,15 @@ async function doRedeemCode(
       retry: { limit: appConfig.network.retryCount },
     })
     .json();
-  type ResultTypeType = 'ok' | 'used' | 'expired' | 'reachedUsageLimit' | 'notEnoughLv' | 'usedByOthers' | 'unknown';
-  /*
-    expired: the code has expired
-    reachedUsageLimit: the code has a usage limit and the limit has been reached
-    notEnoughLv: the account's player rank (or something similar) is insufficient
-    used: already used for the account
-    usedByOthers: already used by others (one-time code)
-  */
+  type ResultTypeType =
+    | 'ok' // ok, redemption success
+    | 'expired' // the code has expired
+    | 'invalid' // the code is invalid
+    | 'reachedUsageLimit' // the code has a usage limit and the limit has been reached
+    | 'notEnoughLv' // the account's player rank (or something similar) is insufficient
+    | 'used' // already used for the account
+    | 'usedByOthers' // already used by others (one-time code)
+    | 'unknown';
   const retObj: {
     isSuccess: boolean;
     resultType: ResultTypeType;
@@ -497,6 +498,7 @@ async function doRedeemCode(
       const retcodeMapArray: [number, ResultTypeType][] = [
         [0, 'ok'],
         [-2001, 'expired'],
+        [-2003, 'invalid'],
         [-2006, 'reachedUsageLimit'],
         [-2011, 'notEnoughLv'],
         [-2017, 'used'],
