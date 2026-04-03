@@ -56,7 +56,8 @@ network:
     chromeWindows: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
       (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36
     curl: curl/8.4.0
-    ios: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15
+    ios:
+      Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15
       (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1
     curlUnity: UnityPlayer/2022.3.21f1 (UnityWebRequest/1.0, libcurl/8.5.0-DEV)
   timeout: 20000
@@ -459,3 +460,4 @@ redemption:
     - TSUKINOARIKAE
     - ZECVR1J1O6R2
     - ZECVVP1DT7Z2
+    - JTSHBHPPKUSV
